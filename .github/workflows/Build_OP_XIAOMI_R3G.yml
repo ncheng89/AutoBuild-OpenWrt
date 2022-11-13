@@ -84,11 +84,11 @@ jobs:
       working-directory: ./openwrt
       run: |
         sed -i 's#111,49\ +111,89#113,49\ +113,93#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-        sed -i 's#bus_clk;#bus_clk,i;g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
+        sed -i 's#bus_clk;#bus_clk,i;#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\tfor(i=0;i<1024;i++);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\trt_memc_w32(pll,MEMC_REG_CPU_PLL);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\tpll |=  (0x362);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-        sed -i 'N;156 a +\t\tpll &= ~(0x7ff);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch  
+        sed -i 'N;156 a +\t\tpll &= ~(0x7ff);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
 
     - name: Configuration Customization - Build_xiaomi_R3G
       env:
