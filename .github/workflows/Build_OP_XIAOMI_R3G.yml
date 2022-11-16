@@ -1,8 +1,5 @@
 #=================================================
 # Description: Build OpenWrt using GitHub Actions
-# Lisence: MIT
-# Author: eSirPlayground
-# Youtube Channel: https://goo.gl/fvkdwm 
 #=================================================
 
 name: Build_xiaomir3g
@@ -57,6 +54,7 @@ jobs:
         sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
+        
     - name: Clone source code
       env: 
         REPO_URL: https://github.com/coolsnowwolf/lede
@@ -66,6 +64,8 @@ jobs:
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "src-git ssrp https://github.com/fw876/helloworld.git" >> ./feeds.conf.default
+        
+        
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
@@ -76,13 +76,21 @@ jobs:
     - name: Import external feeds - JerryKuKu Argon
       working-directory: ./openwrt
       run: |
-        #git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon-jerrykuku
-        rm -rf package/luci-theme-argon;rm -rf package/lean/luci-theme-argon
-        git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/lean/luci-theme-argon
+        if [ -d ./package/lean ];then
+            echo "The current source code is openwrt-lean"
+            rm -rf package/luci-theme-argon;rm -rf package/lean/luci-theme-argon
+            git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/lean/luci-theme-argon
+        else
+            echo "The current source code is openwrt"
+            git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        
+        fi
         
     - name: cpu 1100Mhz overclock settings
       working-directory: ./openwrt
       run: |
+        #cpu超频编码=====1000代码为：0x312  1100代码为：0x362  1200代码：0x3B2
+        #计算公式:(1100Mhz/20Mhz -1)*16+2
         sed -i 's#111,49\ +111,89#113,49\ +113,93#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 's#bus_clk;#bus_clk,i;#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\tfor(i=0;i<1024;i++);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
@@ -116,11 +124,13 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+        
     - name: Build firmware
       working-directory: ./openwrt
       run: |
         echo -e "$(nproc) thread build."
         make -j$(nproc) V=s
+        
     - name : Upload artifact
       uses: actions/upload-artifact@master
       with:
