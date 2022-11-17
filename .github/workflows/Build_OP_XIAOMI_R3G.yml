@@ -89,6 +89,7 @@ jobs:
     - name: cpu 1100Mhz overclock settings
       working-directory: ./openwrt
       run: |
+        if [ -d 'target/linux/ramips/patches-5.4/' ];then
         #cpu超频编码=====1000代码为：0x312  1100代码为：0x362  1200代码：0x3B2
         #计算公式:(1100Mhz/20Mhz -1)*16+2
         sed -i 's#111,49\ +111,89#113,49\ +113,93#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
@@ -97,6 +98,7 @@ jobs:
         sed -i 'N;156 a +\t\trt_memc_w32(pll,MEMC_REG_CPU_PLL);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\tpll |=  (0x3B2);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
         sed -i 'N;156 a +\t\tpll &= ~(0x7ff);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
+        fi
         
 #    - name: Modified kernel version 5.10
 #      working-directory: ./openwrt
