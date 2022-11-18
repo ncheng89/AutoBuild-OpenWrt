@@ -15,6 +15,7 @@ sed -i 's/192.168.1.1/192.168.5.1/g' openwrt/package/base-files/files/bin/config
 #rm openwrt/package/lean/luci-theme-argon -rf
 
 #定制ssh登入提示
+>openwrt/package/base-files/files/etc/banner
 cat >> openwrt/package/base-files/files/etc/banner << EOF
   _______                     ________        __
  |       |.-----.-----.-----.|  |  |  |.----.|  |_
