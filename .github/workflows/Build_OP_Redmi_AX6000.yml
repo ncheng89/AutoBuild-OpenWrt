@@ -1,12 +1,7 @@
 name: Build_redmi_ax6000
 
-on: 
-  release:
-    types: [published]
-
-  push:
-    branches: 
-      - master
+on:
+  workflow_dispatch:
 
   #schedule:
   #  - cron: 0 8 * * 5
