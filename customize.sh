@@ -13,3 +13,8 @@ sed -i 's/192.168.1.1/192.168.5.1/g' openwrt/package/base-files/files/bin/config
 
 #3. Replace with JerryKuKu’s Argon
 #rm openwrt/package/lean/luci-theme-argon -rf
+
+#23.05主题修改
+sed -i 's/192\.168\.1\.1/192\.168\.55\.1/g' openwrt/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js
+sed -i 's/192\.168\.1\.1/192\.168\.55\.1/g' openwrt/package/base-files/luci2/bin/config_generate
+sed -i 's/LEDE/OpenWrt/g' openwrt/package/base-files/luci2/bin/config_generate
