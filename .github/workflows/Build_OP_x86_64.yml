@@ -108,7 +108,7 @@ jobs:
         tar -czf openwrt_vmdk.tar.gz openwrt.vmdk openwrt-flat.vmdk
 
     - name: Upload VMDK Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@master
       with:
         name: openwrt-vmdk
         path: ./openwrt/bin/targets/x86/64/openwrt_vmdk.tar.gz
