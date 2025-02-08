@@ -71,7 +71,6 @@ jobs:
         echo "--------------------------硬盘信息--------------------------"
         echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
         df -hT
-        pwd
 
     - name: Clone source code
       env: 
@@ -79,9 +78,13 @@ jobs:
         REPO_BRANCH: master
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        mv openwrt /mnt/
+        ln -s /mnt/openwrt ./
         cd openwrt
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
         sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
+        df -h
+        ls -lah /mnt/
         
     - name: Update & Install feeds
       working-directory: ./openwrt
