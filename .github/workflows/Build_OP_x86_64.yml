@@ -58,6 +58,20 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
 
+    - name: echo host info
+      run: |
+        # 检查服务器性能
+        echo "--------------------------CPU信息--------------------------"
+        echo "CPU物理数量: $(cat /proc/cpuinfo | grep "physical id" | sort | uniq | wc -l)"
+        echo "CPU核心数量: $(nproc)"
+        echo "CPU型号信息: $(cat /proc/cpuinfo | grep -m1 name | awk -F: '{print $2}')"
+        echo "--------------------------内存信息--------------------------"
+        echo "已安装内存详细信息:"
+        sudo lshw -short -C memory | grep GiB
+        echo "--------------------------硬盘信息--------------------------"
+        echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
+        df -hT
+
     - name: Clone source code
       env: 
         REPO_URL: https://github.com/coolsnowwolf/lede
