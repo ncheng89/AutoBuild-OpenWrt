@@ -97,3 +97,17 @@ jobs:
       with:
         name: OpenWrt
         path: openwrt/bin
+        
+    - name: Convert image to VMDK format for ESXi
+      run: |
+        cd ./openwrt/bin/targets/x86/64
+        gunzip -k openwrt-x86-64-generic-squashfs-combined-efi.img.gz
+        qemu-img convert -f raw -O vmdk -o subformat=monolithicFlat openwrt-x86-64-generic-squashfs-combined-efi.img openwrt.vmdk
+        ls -lh openwrt.vmdk openwrt-flat.vmdk
+        tar -czf openwrt_vmdk.tar.gz openwrt.vmdk openwrt-flat.vmdk
+
+    - name: Upload VMDK Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: openwrt-vmdk
+        path: ./openwrt/bin/targets/x86/64/openwrt_vmdk.tar.gz
