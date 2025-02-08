@@ -101,6 +101,8 @@ jobs:
         
     - name: Convert image to VMDK format for ESXi
       run: |
+        pwd
+        ls -lah
         cd ./openwrt/bin/targets/x86/64
         gunzip -f openwrt-x86-64-generic-squashfs-combined-efi.img.gz 2>/dev/null
         qemu-img convert -f raw -O vmdk -o subformat=monolithicFlat openwrt-x86-64-generic-squashfs-combined-efi.img openwrt.vmdk
