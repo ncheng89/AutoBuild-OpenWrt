@@ -78,7 +78,7 @@ jobs:
         REPO_BRANCH: master
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-        sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./
+        sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo -R runner.docker /mnt/openwrt
         ls -lah ./
         cd openwrt
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
