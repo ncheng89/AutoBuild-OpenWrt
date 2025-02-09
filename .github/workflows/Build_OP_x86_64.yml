@@ -101,7 +101,7 @@ jobs:
         
     - name: Convert image to VMDK format for ESXi
       run: |
-        sudo apt update && sudo apt install qemu-utils
+        sudo apt update && sudo apt install -y qemu-utils
         which qemu-img
         cd ./openwrt/bin/targets/x86/64
         gunzip -f openwrt-x86-64-generic-squashfs-combined-efi.img.gz 2>/dev/null || echo 'Decompression successful'
