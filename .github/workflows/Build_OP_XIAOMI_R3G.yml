@@ -1,16 +1,17 @@
-#=================================================
-# Description: Build OpenWrt using GitHub Actions
-#=================================================
-
 name: Build_xiaomir3g
 
-on: 
-  release:
-    types: [published]
+on:
+  workflow_dispatch:
+  
+  schedule:
+    - cron: 0 4 * * *
+    
+  #release:
+  #  types: [published]
 
   # push:
-  #   branches: 
-  #     - master
+  #  branches: 
+  #    - master
 
   #schedule:
   #  - cron: 0 8 * * 5
@@ -20,107 +21,65 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      REPO_URL: https://github.com/coolsnowwolf/lede
+      REPO_BRANCH: master
+      CONFIG_FILE: 'xiaomi_r3g.config'
+      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
 
     - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
       run: |
         set +e
-        docker rmi `docker images -q`
-        echo "Deleting files, please wait ..."
-        sudo rm -rf \
-          /usr/share/dotnet \
-          /etc/mysql \
-          /etc/php
-        sudo -E apt-get -y purge \
-          azure-cli \
-          ghc* \
-          zulu* \
-          hhvm \
-          llvm* \
-          firefox \
-          google* \
-          dotnet* \
-          powershell \
-          openjdk* \
-          mysql* \
-          php*
+        docker rmi $(docker images -q)
+        echo "Deleting unnecessary files, please wait ..."
+        sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php
+        sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
         sudo -E apt-get update
-        sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
+        sudo -E apt-get -y install \
+          build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip \
+          zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev \
+          texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler \
+          g++-multilib antlr3 gperf wget curl swig rsync aria2 ca-certificates python3-pyelftools python-pyelftools yasm libtinfo5
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
-        
+
+    - name: Echo host info
+      run: |
+        echo "-------------------------- CPU 信息 --------------------------"
+        echo "CPU 物理数量: $(grep 'physical id' /proc/cpuinfo | sort -u | wc -l)"
+        echo "CPU 核心数量: $(nproc)"
+        echo "CPU 型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
+        echo "-------------------------- 内存信息 --------------------------"
+        echo "已安装内存:"
+        sudo lshw -short -C memory | grep GiB
+        echo "-------------------------- 硬盘信息 --------------------------"
+        echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
+        df -hT
+
     - name: Clone source code
-      env: 
-        #REPO_URL: https://github.com/immortalwrt/immortalwrt
-        REPO_URL: https://github.com/coolsnowwolf/lede
-        #REPO_URL: https://github.com/openwrt/openwrt
-        REPO_BRANCH: master
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo chown -R $USER:$GROUPS /mnt/openwrt
         cd openwrt
-        #echo "src-git ssrp https://github.com/fw876/helloworld.git" >> ./feeds.conf.default
-        #sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
-        sed -i '$a src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
-        sed -i '$a src-git small https://github.com/kenzok8/small' feeds.conf.default
-        sed -i '$a src-git haibo https://github.com/haiibo/openwrt-packages' feeds.conf.default
-        
+        sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
+        sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
         
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        ./scripts/feeds install -a
-        
-    - name: Import external feeds - JerryKuKu Argon
-      working-directory: ./openwrt
+
+    - name: Configuration Customization - Build_x86_64
       run: |
-        if [ -d ./package/lean ];then
-            echo "The current source code is openwrt-lean"
-            rm -rf package/luci-theme-argon;rm -rf package/lean/luci-theme-argon
-            git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/lean/luci-theme-argon
-        else
-            echo "The current source code is openwrt"
-            git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
-        
-        fi
-        
-#    - name: cpu 1100Mhz overclock settings
-#      working-directory: ./openwrt
-#      run: |
-#        if [ -d 'target/linux/ramips/patches-5.4/' ];then
-#        #cpu超频编码=====1000代码为：0x312  1100代码为：0x362  1200代码：0x3B2
-#        #计算公式:(1100Mhz/20Mhz -1)*16+2
-#        sed -i 's#111,49\ +111,89#113,49\ +113,93#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        sed -i 's#bus_clk;#bus_clk,i;#g' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        sed -i 'N;156 a +\t\tfor(i=0;i<1024;i++);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        sed -i 'N;156 a +\t\trt_memc_w32(pll,MEMC_REG_CPU_PLL);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        sed -i 'N;156 a +\t\tpll |=  (0x3B2);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        sed -i 'N;156 a +\t\tpll &= ~(0x7ff);' target/linux/ramips/patches-5.4/102-mt7621-fix-cpu-clk-add-clkdev.patch
-#        fi
-        
-#    - name: Modified kernel version 5.10
-#      working-directory: ./openwrt
-#      run: |
-#       sed -i 's#PATCHVER:=5.4#PATCHVER:=5.10#g' target/linux/ramips/Makefile
-#       #修改5.10的cpu超频配置
-#       sed -i 's#105,11\ +110,89#133,11\ +133,93#g' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch 
-#       sed -i 's#bus_clk;#bus_clk,i;#g' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch 
-#       sed -i 'N;118 a +\t\tfor(i=0;i<1024;i++);' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch 
-#       sed -i 'N;118 a +\t\trt_memc_w32(pll,MEMC_REG_CPU_PLL);' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch 
-#       sed -i 'N;118 a +\t\tpll |=  (0x362);' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch 
-#       sed -i 'N;118 a +\t\tpll &= ~(0x7ff);' target/linux/ramips/patches-5.10/322-mt7621-fix-cpu-clk-add-clkdev.patch
-       
-    - name: Configuration Customization - Build_xiaomi_R3G
-      env:
-        CONFIG_FILE: 'xiaomi_r3g.config'
-      run: |
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x ./customize.sh && ./customize.sh
         cd openwrt && make defconfig
@@ -131,15 +90,23 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-        
+
     - name: Build firmware
       working-directory: ./openwrt
       run: |
-        echo -e "$(nproc) thread build."
+        echo -e "$(nproc) threads for build."
         make -j$(nproc) V=s
-        
-    - name : Upload artifact
+        cp .config bin/
+
+    - name: Upload artifact
       uses: actions/upload-artifact@master
       with:
-        name: OpenWrt
+        name: OpenWrt_bin${{ env.FILE_DATE }}
         path: openwrt/bin
+
+    - name: 删除运行记录
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 3
+        keep_minimum_runs: 1
+        token: ${{ env.GITHUB_TOKEN }}
