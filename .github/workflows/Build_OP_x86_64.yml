@@ -28,6 +28,7 @@ jobs:
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'x86_64.config'
+      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
     steps:
     - name: Checkout
@@ -104,7 +105,7 @@ jobs:
         path: openwrt/bin
 
         
-    - name: Convert image to VMDK format for ESXi
+    - name: 将映像转换为 ESXi 的 VMDK 格式
       run: |
         sudo apt update && sudo apt install -y qemu-utils >/dev/null
         cd ./openwrt/bin/targets/x86/64
@@ -113,8 +114,17 @@ jobs:
         ls -lh openwrt.vmdk openwrt-flat.vmdk
         tar -czf openwrt_vmdk.tar.gz openwrt.vmdk openwrt-flat.vmdk
 
-    - name: Upload VMDK Artifact
+    - name: 上传 VMDK 工件
       uses: actions/upload-artifact@master
       with:
         name: openwrt-vmdk${{ env.FILE_DATE }}
         path: ./openwrt/bin/targets/x86/64/openwrt_vmdk.tar.gz
+
+    - name: 删除运行记录
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 3
+        keep_minimum_runs: 1
+        token: ${{ env.GITHUB_TOKEN }}
+
+
