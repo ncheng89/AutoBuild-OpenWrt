@@ -91,6 +91,7 @@ jobs:
       run: |
         echo -e "$(nproc) threads for build."
         make -j$(nproc) V=s
+        cp .config bin/
 
     - name: Upload artifact
       uses: actions/upload-artifact@master
