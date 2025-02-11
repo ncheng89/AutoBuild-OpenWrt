@@ -28,7 +28,7 @@ jobs:
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'x86_64.config'
-      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
     - name: Checkout
@@ -126,6 +126,5 @@ jobs:
       with:
         retain_days: 1
         keep_minimum_runs: 3
-        token: ${{ env.GITHUB_TOKEN }}
 
 
