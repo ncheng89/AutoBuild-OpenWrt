@@ -38,7 +38,7 @@ jobs:
       uses: GitRML/delete-workflow-runs@main
       with:
         retain_days: 1
-        keep_minimum_runs: 3
+        keep_minimum_runs: 1
         #token: ${{ env.GITHUB_TOKEN }}
 
     - name: Initialization environment
