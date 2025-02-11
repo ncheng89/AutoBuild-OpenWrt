@@ -18,3 +18,4 @@ sed -i 's/192.168.1.1/192.168.5.1/g' openwrt/package/base-files/files/bin/config
 sed -i 's/192\.168\.1\.1/192\.168\.55\.1/g' openwrt/feeds/luci/modules/luci-mod-system/htdocs/luci-static/resources/view/system/flash.js
 sed -i 's/192\.168\.1\.1/192\.168\.55\.1/g' openwrt/package/base-files/luci2/bin/config_generate
 sed -i 's/LEDE/OpenWrt/g' openwrt/package/base-files/luci2/bin/config_generate
+sed -i 's/LEDE/OpenWrt/g' openwrt/package/kernel/mac80211/files/lib/wifi/mac80211.sh
