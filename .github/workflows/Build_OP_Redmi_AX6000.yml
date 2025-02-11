@@ -28,7 +28,7 @@ jobs:
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'redmi_ax6000.config'
-      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
     - name: Checkout
