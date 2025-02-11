@@ -28,18 +28,11 @@ jobs:
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'xiaomi_r3g.config'
-      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
-
-    - name: 删除运行记录
-      uses: GitRML/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 1
-        #token: ${{ env.GITHUB_TOKEN }}
 
     - name: Initialization environment
       run: |
@@ -111,3 +104,10 @@ jobs:
       with:
         name: OpenWrt_bin${{ env.DEV_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
+
+    - name: 删除运行记录
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 3
+        #token: ${{ env.GITHUB_TOKEN }}
