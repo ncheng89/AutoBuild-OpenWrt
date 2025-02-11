@@ -34,6 +34,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
+    - name: 删除运行记录
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 3
+        #token: ${{ env.GITHUB_TOKEN }}
+
     - name: Initialization environment
       run: |
         set +e
@@ -104,10 +111,3 @@ jobs:
       with:
         name: OpenWrt_bin${{ env.DEV_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
-
-    - name: 删除运行记录
-      uses: GitRML/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 3
-        token: ${{ env.GITHUB_TOKEN }}
