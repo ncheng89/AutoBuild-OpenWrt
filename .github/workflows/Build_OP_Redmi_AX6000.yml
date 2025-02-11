@@ -65,7 +65,7 @@ jobs:
 
     - name: Clone source code
       run: |
-		echo "DEV_NAME=$(basename "$CONFIG_FILE" .config)" >> $GITHUB_ENV
+        echo "DEV_NAME=$(basename "$CONFIG_FILE" .config)" >> $GITHUB_ENV
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo chown -R $USER:$GROUPS /mnt/openwrt
         cd openwrt
