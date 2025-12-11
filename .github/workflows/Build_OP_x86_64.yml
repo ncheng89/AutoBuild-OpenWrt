@@ -94,24 +94,16 @@ jobs:
     - name: Update & Install feeds (with newer Go)
       working-directory: ./openwrt
       run: |
-        # 1) 正常更新 / 安装所有 feed
         ./scripts/feeds update -a
 
-        # 可选：按你原来的习惯清理一些不想要的包
         rm -rf feeds/luci/applications/luci-app-mosdns
         rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
         rm -rf feeds/packages/utils/v2dat
 
         ./scripts/feeds install -a
-
-        # 2) 替换为官方 packages 仓库里的新版 golang（>=1.25）
         rm -rf feeds/packages/lang/golang
         svn export https://github.com/openwrt/packages/trunk/lang/golang feeds/packages/lang/golang
-
-        # 3) 重新注册 golang（避免旧版本残留）
         ./scripts/feeds install golang
-
-        # 4) 预编译 golang 工具链（xray / mosdns 等 Go 包会快一些）
         make package/feeds/packages/golang/compile -j"$(nproc)" V=s
 
     - name: Check Go version in toolchain
