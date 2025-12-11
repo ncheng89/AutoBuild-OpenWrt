@@ -2,18 +2,8 @@ name: Build_x86_64
 
 on:
   workflow_dispatch:
-  #release:
-  #  types: [published]
-
-  # push:
-  #  branches: 
-  #    - master
-
   schedule:
-    - cron: 0 8 * * 5
-  
-  #watch:
-  #  types: [started]
+    - cron: "0 8 * * 5"
 
 jobs:
   build:
@@ -23,55 +13,59 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
-      CONFIG_FILE: 'x86_64.config'
+      CONFIG_FILE: "x86_64.config"
       GITHUB_TOKEN: ${{ github.token }}
 
     steps:
+    # ------------------------------
+    # Checkout Repo
+    # ------------------------------
     - name: Checkout
       uses: actions/checkout@master
 
+    # ------------------------------
+    # Build Dependencies (最精简且完整)
+    # ------------------------------
     - name: Initialization environment
       run: |
-        set +e
-        docker rmi $(docker images -q)
-        echo "Deleting unnecessary files, please wait ..."
-        sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php
-        sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
-        sudo -E apt-get update
-        sudo -E apt-get -y install \
-          build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip \
-          zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev \
-          texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler subversion \
-          g++-multilib antlr3 gperf wget curl swig rsync aria2 ca-certificates python3-pyelftools python-pyelftools yasm libtinfo5
-        sudo -E apt-get -y autoremove --purge
-        sudo -E apt-get clean
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential gawk gettext cmake \
+          flex bison autoconf automake libtool \
+          libncurses5-dev zlib1g-dev libssl-dev libelf-dev \
+          python3 python3-pyelftools \
+          gcc-multilib g++-multilib \
+          git-core subversion wget curl rsync unzip \
+          p7zip-full upx-ucl
 
+    # ------------------------------
+    # Host Info
+    # ------------------------------
     - name: Echo host info
       run: |
-        echo "-------------------------- CPU 信息 --------------------------"
-        echo "CPU 物理数量: $(grep 'physical id' /proc/cpuinfo | sort -u | wc -l)"
-        echo "CPU 核心数量: $(nproc)"
-        echo "CPU 型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
-        echo "-------------------------- 内存信息 --------------------------"
-        echo "已安装内存:"
-        sudo lshw -short -C memory | grep GiB || true
-        echo "-------------------------- 硬盘信息 --------------------------"
-        echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
-        df -hT
+        echo "CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
+        echo "Cores: $(nproc)"
+        echo "Memory:"
+        free -h
 
+    # ------------------------------
+    # Clone OpenWrt
+    # ------------------------------
     - name: Clone source code
       run: |
         echo "DEV_NAME=_$(basename "$CONFIG_FILE" .config)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo chown -R $USER:$GROUPS /mnt/openwrt
+
         cd openwrt
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
         sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
 
-    # ==========================
-    # 缓存 1：dl 下载缓存
-    # ==========================
+    # ------------------------------
+    # Cache dl/
+    # ------------------------------
     - name: Cache OpenWrt dl
       uses: actions/cache@v4
       with:
@@ -80,9 +74,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-openwrt-dl-
 
-    # ==========================
-    # 缓存 2：ccache（加速二次编译）
-    # ==========================
+    # ------------------------------
+    # Cache ccache
+    # ------------------------------
     - name: Cache ccache
       uses: actions/cache@v4
       with:
@@ -91,69 +85,100 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-ccache-
 
-    - name: Update & Install feeds (with newer Go)
+    # ------------------------------
+    # Update Feeds + Use Latest Golang (Fix Xray/SingBox)
+    # ------------------------------
+    - name: Update feeds and install new golang
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
 
+        # 移除会导致冲突的 feed
         rm -rf feeds/luci/applications/luci-app-mosdns
-        rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
+        rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,sing*,smartdns}
         rm -rf feeds/packages/utils/v2dat
 
         ./scripts/feeds install -a
+
+        # 使用 OpenWrt 官方最新 golang（go1.25）
         rm -rf feeds/packages/lang/golang
         svn export https://github.com/openwrt/packages/trunk/lang/golang feeds/packages/lang/golang
+
         ./scripts/feeds install golang
         make package/feeds/packages/golang/compile -j"$(nproc)" V=s
 
+    # ------------------------------
+    # 查看 gcc / go 版本
+    # ------------------------------
     - name: Check Go version in toolchain
       working-directory: ./openwrt
       run: |
-        echo "当前 toolchain 中 Go 版本："
-        find staging_dir -path '*bin/go' -maxdepth 6 2>/dev/null | xargs -r -n1 -I{} sh -c '{} version || true'
+        find staging_dir -path '*bin/go' | xargs -r -I{} sh -c '{} version || true'
 
-    - name: Configuration Customization - Build_x86_64
+    # ------------------------------
+    # Load Config & Customize
+    # ------------------------------
+    - name: Configuration Customization
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x ./customize.sh && ./customize.sh
+        chmod +x ./customize.sh || true
+        ./customize.sh || true
         cd openwrt && make defconfig
 
+    # ------------------------------
+    # Download Dependencies
+    # ------------------------------
     - name: Download package
       working-directory: ./openwrt
       run: |
-        make download -j"$(nproc)"
-        find dl -size -1024c -exec ls -l {} \;
+        make download -j$(nproc)
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Build firmware
+    # ------------------------------
+    # Build with Live Error Output
+    # ------------------------------
+    - name: Build firmware (with live error highlight)
       working-directory: ./openwrt
       run: |
-        echo -e "$(nproc) threads for build."
-        make -j"$(nproc)" V=s 2>&1 | tee build.log | grep --line-buffered -i -E "error:|failed|cannot|undefined|not found|missing|requires go|dependency|panic" &
-        wait ${!}
+        make -j$(nproc) V=s 2>&1 | tee build.log | \
+          grep --line-buffered -i -E "error:|failed|cannot|undefined|not found|missing|requires go|dependency|panic" &
+        wait $!
         cp .config bin/
 
+    # ------------------------------
+    # Upload Firmware
+    # ------------------------------
     - name: Upload artifact
       uses: actions/upload-artifact@master
       with:
         name: OpenWrt_bin${{ env.DEV_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
-    - name: 将映像转换为 ESXi 的 VMDK 格式
+    # ------------------------------
+    # Build VMDK for ESXi
+    # ------------------------------
+    - name: Build VMDK
       run: |
-        sudo apt update && sudo apt install -y qemu-utils >/dev/null
+        sudo apt-get install -y qemu-utils
         cd ./openwrt/bin/targets/x86/64
-        gunzip -f openwrt-x86-64-generic-squashfs-combined-efi.img.gz 2>/dev/null || echo 'Decompression successful'
-        qemu-img convert -f raw -O vmdk -o subformat=monolithicFlat openwrt-x86-64-generic-squashfs-combined-efi.img openwrt.vmdk
-        ls -lh openwrt.vmdk openwrt-flat.vmdk
+        gunzip -f openwrt-x86-64-generic-squashfs-combined-efi.img.gz || true
+
+        qemu-img convert -f raw -O vmdk \
+          -o subformat=monolithicFlat \
+          openwrt-x86-64-generic-squashfs-combined-efi.img \
+          openwrt.vmdk
+
         tar -czf openwrt_vmdk.tar.gz openwrt.vmdk openwrt-flat.vmdk
 
-    - name: 上传 VMDK 工件
+    - name: Upload VMDK
       uses: actions/upload-artifact@master
       with:
         name: openwrt-vmdk${{ env.FILE_DATE }}
         path: ./openwrt/bin/targets/x86/64/openwrt_vmdk.tar.gz
 
+    # ------------------------------
+    # Cleanup Old Workflow Runs
+    # ------------------------------
     - name: 删除运行记录
       uses: GitRML/delete-workflow-runs@main
       with:
