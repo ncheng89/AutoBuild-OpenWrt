@@ -17,15 +17,9 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
 
     steps:
-    # ------------------------------
-    # Checkout Repo
-    # ------------------------------
     - name: Checkout
       uses: actions/checkout@master
 
-    # ------------------------------
-    # Build Dependencies (最精简且完整)
-    # ------------------------------
     - name: Initialization environment
       run: |
         sudo apt-get update
@@ -38,15 +32,18 @@ jobs:
           git-core subversion wget curl rsync unzip \
           p7zip-full upx-ucl
 
-    # ------------------------------
-    # Host Info
-    # ------------------------------
     - name: Echo host info
       run: |
-        echo "CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
-        echo "Cores: $(nproc)"
-        echo "Memory:"
-        free -h
+        echo "-------------------------- CPU 信息 --------------------------"
+        echo "CPU 物理数量: $(grep 'physical id' /proc/cpuinfo | sort -u | wc -l)"
+        echo "CPU 核心数量: $(nproc)"
+        echo "CPU 型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
+        echo "-------------------------- 内存信息 --------------------------"
+        echo "已安装内存:"
+        sudo lshw -short -C memory | grep GiB || true
+        echo "-------------------------- 硬盘信息 --------------------------"
+        echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
+        df -hT
 
     # ------------------------------
     # Clone OpenWrt
