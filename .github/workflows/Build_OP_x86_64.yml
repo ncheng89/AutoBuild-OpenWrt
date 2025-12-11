@@ -93,6 +93,13 @@ jobs:
         rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
         rm -rf feeds/packages/utils/v2dat
         rm -rf feeds/packages/lang/golang
+        # 删除第三方造成依赖环的所有相关包
+        rm -rf feeds/small/{luci-app-bypass,luci-app-ssr-plus,luci-app-fchomo}
+        rm -rf feeds/kenzo/luci-app-bypass
+        rm -rf feeds/small/{shadowsocks-libev,shadowsocks-rust,trojan-plus,xray-core}
+        rm -rf feeds/small/{chinadns-ng,pdnsd-alt,dns2socks}
+        rm -rf feeds/small/firewall4*
+        rm -rf feeds/small/coreutils
         git clone https://github.com/kenzok8/golang -b 1.25 feeds/packages/lang/golang
         ./scripts/feeds install -a 
         make menuconfig
