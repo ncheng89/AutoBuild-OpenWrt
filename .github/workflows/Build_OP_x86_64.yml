@@ -120,8 +120,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         echo -e "$(nproc) threads for build."
-        make -j"$(nproc)" V=s 2>&1 | tee build.log | grep --line-buffered -i -E "error:|failed|cannot|undefined|not found|missing|requires go|dependency|panic" &
-        wait ${!}
+        make -j"$(nproc)" V=s
         cp .config bin/
 
     - name: Upload artifact
