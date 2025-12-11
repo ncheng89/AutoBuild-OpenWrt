@@ -91,15 +91,34 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-ccache-
 
-    - name: Update & Install feeds
+    - name: Update & Install feeds (with newer Go)
       working-directory: ./openwrt
       run: |
-        ./scripts/feeds update -a && rm -rf feeds/luci/applications/luci-app-mosdns
+        # 1) 正常更新 / 安装所有 feed
+        ./scripts/feeds update -a
+
+        # 可选：按你原来的习惯清理一些不想要的包
+        rm -rf feeds/luci/applications/luci-app-mosdns
         rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
         rm -rf feeds/packages/utils/v2dat
-        rm -rf feeds/packages/lang/golang
-        git clone https://github.com/kenzok8/golang feeds/packages/lang/golang
+
         ./scripts/feeds install -a
+
+        # 2) 替换为官方 packages 仓库里的新版 golang（>=1.25）
+        rm -rf feeds/packages/lang/golang
+        svn export https://github.com/openwrt/packages/trunk/lang/golang feeds/packages/lang/golang
+
+        # 3) 重新注册 golang（避免旧版本残留）
+        ./scripts/feeds install golang
+
+        # 4) 预编译 golang 工具链（xray / mosdns 等 Go 包会快一些）
+        make package/feeds/packages/golang/compile -j"$(nproc)" V=s
+
+    - name: Check Go version in toolchain
+      working-directory: ./openwrt
+      run: |
+        echo "当前 toolchain 中 Go 版本："
+        find staging_dir -path '*bin/go' -maxdepth 6 2>/dev/null | xargs -r -n1 -I{} sh -c '{} version || true'
 
     - name: Configuration Customization - Build_x86_64
       run: |
