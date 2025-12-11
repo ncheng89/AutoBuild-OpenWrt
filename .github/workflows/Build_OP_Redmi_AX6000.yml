@@ -18,8 +18,8 @@ jobs:
 
     env:
       DEBIAN_FRONTEND: noninteractive
-      REPO_URL: https://github.com/openwrt/openwrt
-      #REPO_URL: https://github.com/coolsnowwolf/lede
+      #REPO_URL: https://github.com/openwrt/openwrt
+      REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'redmi_ax6000.config'
       GITHUB_TOKEN: ${{ github.token }}
