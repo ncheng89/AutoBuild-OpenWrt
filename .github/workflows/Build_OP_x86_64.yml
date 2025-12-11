@@ -69,9 +69,6 @@ jobs:
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
         sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
 
-    # ==========================
-    # 缓存 1：dl 下载缓存
-    # ==========================
     - name: Cache OpenWrt dl
       uses: actions/cache@v4
       with:
@@ -80,9 +77,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-openwrt-dl-
 
-    # ==========================
-    # 缓存 2：ccache（加速二次编译）
-    # ==========================
     - name: Cache ccache
       uses: actions/cache@v4
       with:
@@ -90,22 +84,19 @@ jobs:
         key: ${{ runner.os }}-ccache-${{ hashFiles(env.CONFIG_FILE) }}
         restore-keys: |
           ${{ runner.os }}-ccache-
-
+            
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
-		rm -rf feeds/luci/applications/luci-app-mosdns
-		rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
-		rm -rf feeds/packages/utils/v2dat
-		
-		rm -rf feeds/packages/lang/golang
-		git clone https://github.com/kenzok8/golang -b 1.25 feeds/packages/lang/golang
-		
-		./scripts/feeds install -a 
-		make menuconfig
-
-
+        rm -rf feeds/luci/applications/luci-app-mosdns
+        rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
+        rm -rf feeds/packages/utils/v2dat
+        rm -rf feeds/packages/lang/golang
+        git clone https://github.com/kenzok8/golang -b 1.25 feeds/packages/lang/golang
+        ./scripts/feeds install -a 
+        make menuconfig
+        
     - name: Configuration Customization - Build_x86_64
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
