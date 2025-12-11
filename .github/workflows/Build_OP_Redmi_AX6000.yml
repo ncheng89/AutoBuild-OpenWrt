@@ -2,20 +2,13 @@ name: Build_redmi_ax6000
 
 on:
   workflow_dispatch:
-  
   schedule:
     - cron: 0 8 * * 5
-    
   #release:
   #  types: [published]
-
-  # push:
-  #  branches: 
+  #push:
+  #  branches:
   #    - master
-
-  #schedule:
-  #  - cron: 0 8 * * 5
-  
   #watch:
   #  types: [started]
 
@@ -58,7 +51,7 @@ jobs:
         echo "CPU 型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
         echo "-------------------------- 内存信息 --------------------------"
         echo "已安装内存:"
-        sudo lshw -short -C memory | grep GiB
+        sudo lshw -short -C memory | grep GiB || true
         echo "-------------------------- 硬盘信息 --------------------------"
         echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
         df -hT
@@ -67,12 +60,34 @@ jobs:
       run: |
         echo "DEV_NAME=_$(basename "$CONFIG_FILE" .config)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-        sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo chown -R $USER:$GROUPS /mnt/openwrt
+        git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt
+        sudo mv openwrt /mnt/ && sudo ln -s /mnt/openwrt ./ && sudo chown -R "$USER:$GROUPS" /mnt/openwrt
         cd openwrt
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
         sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
-        
+
+    # ==========================
+    # 缓存 1：dl 下载缓存
+    # ==========================
+    - name: Cache OpenWrt dl
+      uses: actions/cache@v4
+      with:
+        path: openwrt/dl
+        key: ${{ runner.os }}-openwrt-dl-${{ hashFiles(env.CONFIG_FILE) }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-dl-
+
+    # ==========================
+    # 缓存 2：ccache（加速二次编译）
+    # ==========================
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-ccache-${{ hashFiles(env.CONFIG_FILE) }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
@@ -81,14 +96,14 @@ jobs:
 
     - name: Configuration Customization - Build_redmi_ax6000
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -e "$CONFIG_FILE" ] && mv "$CONFIG_FILE" openwrt/.config
         chmod +x ./customize.sh && ./customize.sh
         cd openwrt && make defconfig
-        
+
     - name: Download package
       working-directory: ./openwrt
       run: |
-        make download -j$(nproc)
+        make download -j"$(nproc)"
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
@@ -96,7 +111,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         echo -e "$(nproc) threads for build."
-        make -j$(nproc) V=s
+        make -j"$(nproc)" V=s
         cp .config bin/
 
     - name: Upload artifact
