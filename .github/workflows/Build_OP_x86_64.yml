@@ -76,7 +76,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: openwrt/dl
-        key: ${{ runner.os }}-openwrt-dl-${{ hashFiles('x86_64.config') }}
+        key: ${{ runner.os }}-openwrt-dl-${{ hashFiles(env.CONFIG_FILE) }}
         restore-keys: |
           ${{ runner.os }}-openwrt-dl-
 
@@ -87,7 +87,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ hashFiles('x86_64.config') }}
+        key: ${{ runner.os }}-ccache-${{ hashFiles(env.CONFIG_FILE) }}
         restore-keys: |
           ${{ runner.os }}-ccache-
 
