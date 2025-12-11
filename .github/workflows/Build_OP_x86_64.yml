@@ -2,7 +2,6 @@ name: Build_x86_64
 
 on:
   workflow_dispatch:
-    
   #release:
   #  types: [published]
 
@@ -55,7 +54,7 @@ jobs:
         echo "CPU 型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
         echo "-------------------------- 内存信息 --------------------------"
         echo "已安装内存:"
-        sudo lshw -short -C memory | grep GiB
+        sudo lshw -short -C memory | grep GiB || true
         echo "-------------------------- 硬盘信息 --------------------------"
         echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)"
         df -hT
@@ -69,16 +68,40 @@ jobs:
         cd openwrt
         sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
         sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
+        # 第一次 feeds update + 清理/替换
         ./scripts/feeds update -a && rm -rf feeds/luci/applications/luci-app-mosdns
         rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,v2ray*,sing*,smartdns}
         rm -rf feeds/packages/utils/v2dat
         rm -rf feeds/packages/lang/golang
         git clone https://github.com/kenzok8/golang feeds/packages/lang/golang
-        
+
+    # ==========================
+    # 缓存 1：dl 下载缓存
+    # ==========================
+    - name: Cache OpenWrt dl
+      uses: actions/cache@v4
+      with:
+        path: openwrt/dl
+        key: ${{ runner.os }}-openwrt-dl-${{ hashFiles('x86_64.config') }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-dl-
+
+    # ==========================
+    # 缓存 2：ccache（加速二次编译）
+    # ==========================
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-ccache-${{ hashFiles('x86_64.config') }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
-        ./scripts/feeds update -a
+        # 上面 Clone step 已经 update 过一次，这里只做 install 即可
+        # 再次 update 会浪费时间，也会覆盖你刚刚清理/替换的 feed
         ./scripts/feeds install -a
 
     - name: Configuration Customization - Build_x86_64
@@ -86,11 +109,11 @@ jobs:
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x ./customize.sh && ./customize.sh
         cd openwrt && make defconfig
-        
+
     - name: Download package
       working-directory: ./openwrt
       run: |
-        make download -j$(nproc)
+        make download -j"$(nproc)"
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
@@ -98,7 +121,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         echo -e "$(nproc) threads for build."
-        make -j$(nproc) V=s
+        make -j"$(nproc)" V=s
         cp .config bin/
 
     - name: Upload artifact
@@ -107,7 +130,6 @@ jobs:
         name: OpenWrt_bin${{ env.DEV_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
-        
     - name: 将映像转换为 ESXi 的 VMDK 格式
       run: |
         sudo apt update && sudo apt install -y qemu-utils >/dev/null
@@ -128,5 +150,3 @@ jobs:
       with:
         retain_days: 1
         keep_minimum_runs: 3
-
-
