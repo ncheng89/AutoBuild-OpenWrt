@@ -133,6 +133,8 @@ jobs:
       run: |
         sudo apt update && sudo apt install -y qemu-utils >/dev/null
         cd ./openwrt/bin/targets/x86/64
+        echo "当前目录内容："
+        ls -lh
         gunzip -f openwrt-x86-64-generic-squashfs-combined-efi.img.gz 2>/dev/null || echo 'Decompression successful'
         qemu-img convert -f raw -O vmdk -o subformat=monolithicFlat openwrt-x86-64-generic-squashfs-combined-efi.img openwrt.vmdk
         ls -lh openwrt.vmdk openwrt-flat.vmdk
