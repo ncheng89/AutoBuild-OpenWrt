@@ -39,12 +39,14 @@ cd "$SOURCE_DIR"
 ./scripts/feeds update -a
 "$REPOSITORY_DIR/scripts/prepare-vpn-packages.sh" "$SOURCE_DIR" "$BUILD_DIR/vpn-versions.txt"
 ./scripts/feeds install -a
+"$REPOSITORY_DIR/scripts/prepare-zerotier-luci.sh" "$SOURCE_DIR" "$BUILD_DIR/zerotier-luci-version.txt"
 
 {
   echo "KENZO_COMMIT=$(git -C feeds/kenzo rev-parse HEAD)"
   echo "SMALL_COMMIT=$(git -C feeds/small rev-parse HEAD)"
 } >> "$VERSION_FILE"
 cat "$BUILD_DIR/vpn-versions.txt" >> "$VERSION_FILE"
+cat "$BUILD_DIR/zerotier-luci-version.txt" >> "$VERSION_FILE"
 
 cp "$REPOSITORY_DIR/redmi_ax6000.config" .config
 mkdir -p files
