@@ -84,6 +84,9 @@ required_symbols=(
   CONFIG_PACKAGE_luci-i18n-filetransfer-zh-cn
   CONFIG_PACKAGE_luci-app-arpbind
   CONFIG_PACKAGE_luci-i18n-arpbind-zh-cn
+  CONFIG_PACKAGE_ss
+  CONFIG_PACKAGE_conntrack
+  CONFIG_PACKAGE_mtr-nojson
 )
 
 for symbol in "${required_symbols[@]}"; do
