@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# 统一将默认主题切换到最新版 Argon。
+uci -q set luci.main.mediaurlbase='/luci-static/argon'
+
+# 512 MiB 设备使用按需分配的 zram，缓冲 Mihomo 的瞬时内存峰值。
+uci -q set system.@system[0].zram_size_mb='192'
+uci -q set system.@system[0].zram_comp_algo='lzo'
+
+uci -q commit luci
+uci -q commit system
+
+exit 0
