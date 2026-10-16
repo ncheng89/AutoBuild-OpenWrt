@@ -60,9 +60,8 @@ required_symbols=(
   CONFIG_PACKAGE_luci-app-passwall
   CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy
   CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy
-  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Client
   CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox
-  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray
   CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
   CONFIG_PACKAGE_luci-theme-argon
   CONFIG_PACKAGE_luci-app-argon-config
@@ -79,6 +78,22 @@ required_symbols=(
 for symbol in "${required_symbols[@]}"; do
   if ! grep -qx "${symbol}=y" .config; then
     echo "必需配置未生效：$symbol" >&2
+    exit 1
+  fi
+done
+
+excluded_symbols=(
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Geoview
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin
+  CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray
+)
+
+for symbol in "${excluded_symbols[@]}"; do
+  if grep -qx "${symbol}=y" .config; then
+    echo "精简配置意外启用了：$symbol" >&2
     exit 1
   fi
 done
