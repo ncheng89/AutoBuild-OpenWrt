@@ -45,6 +45,23 @@ update_package() {
   } >> "$METADATA_FILE"
 }
 
+fix_tcping_cross_strip() {
+  local makefile="$OPENWRT_DIR/feeds/small/tcping/Makefile"
+
+  [[ -f "$makefile" ]] || return 0
+  if ! grep -Fq 'STRIP="$(TARGET_CROSS)strip"' "$makefile"; then
+    sed -i \
+      's|LDFLAGS="$(TARGET_LDFLAGS)"|LDFLAGS="$(TARGET_LDFLAGS)" STRIP="$(TARGET_CROSS)strip"|' \
+      "$makefile"
+  fi
+
+  if ! grep -Fq 'STRIP="$(TARGET_CROSS)strip"' "$makefile"; then
+    echo "tcping 未能切换到目标架构 strip" >&2
+    exit 1
+  fi
+}
+
 : > "$METADATA_FILE"
 update_package zerotier zerotier/ZeroTierOne ""
 update_package tailscale tailscale/tailscale "v"
+fix_tcping_cross_strip
