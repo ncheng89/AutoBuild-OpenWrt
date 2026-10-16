@@ -73,6 +73,17 @@ required_symbols=(
   CONFIG_PACKAGE_luci-i18n-tailscale-community-zh-cn
   CONFIG_PACKAGE_socat
   CONFIG_PACKAGE_zram-swap
+  CONFIG_PACKAGE_ttyd
+  CONFIG_PACKAGE_luci-app-ttyd
+  CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn
+  CONFIG_PACKAGE_iftop
+  CONFIG_PACKAGE_iperf3
+  CONFIG_PACKAGE_luci-app-wol
+  CONFIG_PACKAGE_luci-i18n-wol-zh-cn
+  CONFIG_PACKAGE_luci-app-filetransfer
+  CONFIG_PACKAGE_luci-i18n-filetransfer-zh-cn
+  CONFIG_PACKAGE_luci-app-arpbind
+  CONFIG_PACKAGE_luci-i18n-arpbind-zh-cn
 )
 
 for symbol in "${required_symbols[@]}"; do
